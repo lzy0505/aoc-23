@@ -29,11 +29,7 @@ let parseMaps line : list<list<int64 * int64 * int64>> =
 let genMap (aList: list<int64 * int64 * int64>) : int64 -> int64 =
       fun n -> (n,false)
                |> (aList |> List.map (fun (d,s,r) ->
-                                        fun (n, b) -> if (not b) && s <= n && n < s + r
-                                                      then
-                                                        printfn "%d -> %d" n (d + (n - s))
-                                                        (d + (n - s), true)
-                                                      else (n, b))
+                                        fun (n, b) -> if (not b) && s <= n && n < s + r then (d + (n - s), true) else (n, b))
                          |> List.reduce (>>))
                |> fst
 
@@ -42,16 +38,14 @@ type Intv = int64 * int64
 let mapIntv : int64 -> int64 -> int64 -> (Intv * bool) -> list<Intv*bool> = fun d s r ((ss,sr),b) ->
         if b then [(ss,sr),b]
         else if ss+sr <= s || s+r <= ss then [(ss,sr),false]
-             elif s <= ss && ss < s+r then if ss+sr <= s+r then [((d + (ss - s),sr),true)] else [((d + (ss - s),s+r-ss),true);((s+r,(sr-(s+r-ss))),false)]
+             elif s <= ss && ss < s+r then if ss+sr <= s+r then [((d+(ss-s),sr),true)] else [((d+(ss-s),s+r-ss),true);((s+r,(sr-(s+r-ss))),false)]
              elif ss+sr <= s+r then [((ss,s-ss),false);((d,(sr-(s-ss))),true)] else [((ss,s-ss),false);((d,r),true);((s+r,ss+sr-(s+r)),false)]
 
 let genMap2 (aList: list<int64 * int64 * int64>) : list<Intv> -> list<Intv> =
       fun iList ->
           iList |> List.map (fun p -> p, false)
-                |> (aList |> List.map (fun (d,s,r) ->
-                                        fun ibListTmp ->
-                                          ibListTmp |> List.map (mapIntv d s r) |> List.reduce List.append)
-                         |> List.reduce (>>))
+                |> (aList |> List.map (fun (d,s,r) -> List.map (mapIntv d s r) >> List.reduce List.append)
+                          |> List.reduce (>>))
                 |> List.map fst
 
 let maps = input |> Seq.tail |> String.concat "\r\n" |> parseMaps |> List.map genMap |> List.reduce (>>)
